@@ -43,15 +43,20 @@ class Sentiment:
 
         # Parts of Speech tagging
         tagged = nltk.pos_tag(words)
-        print(tagged)
 
         # Chunk required group of words
-        grammer = r'''Chunk: {<RB.?>+<VB.?>?<DT>?<JJ.?><IN>?<PRP.?>?<JJ.?>*<NN.?>}
-                             {<JJ.?><IN>?<PRP.?>?<JJ.?>*<NN.?>}
-                             {<RB.?>*<JJ.?>}'''
+        # grammer = r'''Chunk: {<RB.?>+<VB.?>?<DT>?<JJ.?><IN>?<PRP.?>?<JJ.?>*<NN.?>}
+        #                      {<JJ.?><IN>?<PRP.?>?<JJ.?>*<NN.?>}
+        #                      {<RB.?>*<JJ.?>}'''
+        grammer = r'''Chunk: {<RB.?>+<VB.?>?(<DT>?<JJ.?>)+(<IN><PRP.?>?|<IN>?)(<DT>?<JJ.?>)*<NN.?>}
+                             {<RB.?>+<VB.?>?(<DT>?<JJ.?>)*(<IN><PRP.?>?|<IN>?)(<DT>?<JJ.?>)+<NN.?>}
+                             {(<DT>?<JJ.?>)+(<IN><PRP.?>?|<IN>?)(<DT>?<JJ.?>)*<NN.?>}
+                             {(<DT>?<JJ.?>)*(<IN><PRP.?>?|<IN>?)(<DT>?<JJ.?>)+<NN.?>}
+                             {<RB.?>+<VB.?>?(<DT>?<JJ.?>)+(<IN><PRP.?>?|<IN>?)(<DT>?<JJ.?>)*}
+                             {<RB.?>+<VB.?>?(<DT>?<JJ.?>)*(<IN><PRP.?>?|<IN>?)(<DT>?<JJ.?>)+}
+                             {<JJ.?>}'''
         chunker = nltk.RegexpParser(grammer)
         chunked = chunker.parse(tagged)
-        [print(np.array(subtree)) for subtree in chunked.subtrees() if subtree.label() in ['v', 'a']]
         words = [(' '.join(np.array(subtree)[:,0]), 'a') for subtree in chunked.subtrees() if subtree.label() == 'Chunk']
 
         # Convert to base words
@@ -66,7 +71,7 @@ class Sentiment:
         stop_words = stopwords.words("english")
         result = [w for w in words if w not in stop_words]
 
-        return list(set(result))
+        return result
 
     def __make_feature(self, word_list):
         return dict([(word, True) for word in word_list])
