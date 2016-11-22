@@ -33,15 +33,6 @@ class Sentiment:
             with open('classifier.pickle', 'wb') as f:
                 pickle.dump(self.__classifier, f)
 
-    def __get_pos(self, tag):
-        if tag.startswith('V'):
-            return wordnet.VERB
-        elif tag.startswith('J'):
-            return wordnet.ADJ
-        elif tag.startswith('R'):
-            return wordnet.ADV
-        return None
-
     def bag_of_words(self, review):
         # Tokenize the sentence
         words = nltk.word_tokenize(review)
@@ -54,10 +45,13 @@ class Sentiment:
         tagged = nltk.pos_tag(words)
 
         # Chunk adverbs, verbs and adjectives
-        chunkGram = r'Chunk: {<RB.?>*(<VB.?>|<JJ.?>.?)}'
-        chunkParser = nltk.RegexpParser(chunkGram)
-        chunked = chunkParser.parse(tagged)
-        words = [(' '.join(np.array(subtree)[:,0]), self.__get_pos(subtree[-1][1])) for subtree in chunked.subtrees() if subtree.label() == 'Chunk']
+        grammer = r'''v: {<RB.?>+<IN|NN.?>?<VB.?>}
+                         {<VB.?>}
+                      a: {<RB.?>+<IN|NN.?>?<JJ.?>}
+                         {<JJ.?>}'''
+        chunker = nltk.RegexpParser(grammer)
+        chunked = chunker.parse(tagged)
+        words = [(' '.join(np.array(subtree)[:,0]), subtree.label()) for subtree in chunked.subtrees() if subtree.label() in ['v', 'a']]
 
         # Convert to base words
         lemmatizer = WordNetLemmatizer()
@@ -70,7 +64,7 @@ class Sentiment:
         # Replace "n't" with 'not'
         result = [x.replace("n't", 'not') if "n't" in x else x for x in lemmas]
 
-        return list(set(result))
+        return result
 
     def __make_feature(self, word_list):
         return dict([(word, True) for word in word_list])
@@ -131,13 +125,24 @@ class Sentiment:
         # print(self.predict(self.get_positive_data()))
         # print(self.predict(self.get_negative_data()))
 
-        pos = self.__pos[5]
-        neg = self.__neg[72]
+        pos = self.__pos[6]
+        neg = self.__neg[6]
         print('\nPositive Review:\n', pos)
         print('Filtered Words:\n', self.bag_of_words(pos))
         print('\nNegative Review:\n', neg)
         print('Filtered Words:\n', self.bag_of_words(neg))
         print('\nPrediction: ', self.predict([pos, neg]))
+
+        # for i in range(100):
+        #     print(i)
+        #     self.bag_of_words(self.__pos[i])
+        # for i in range(100):
+        #     print(i)
+        #     self.bag_of_words(self.__neg[i])
+            
+        # print(self.bag_of_words('not that bad'))
+        # print(self.bag_of_words('very bad'))
+        # print(self.bag_of_words('not very bad'))
 
 if __name__ == '__main__':
     myObj = Sentiment()
