@@ -41,25 +41,30 @@ class Sentiment:
         words = [re.sub('^[\W_]+|[\W_]+$', '', i) for i in words]
         words = list(filter(None, words))
 
+        # Remove stop words
+        tagged = nltk.pos_tag(stopwords.words("english"))
+        grammer = r'''Chink: {<.*>}
+                             }<RB.?|VB.?|DT|JJ.?|IN|PRP.?>{'''
+        chunker = nltk.RegexpParser(grammer)
+        chunked = chunker.parse(tagged)
+        stop_words = np.array([np.array(subtree)[:,0] for subtree in chunked.subtrees() if subtree.label() == 'Chink'])[:,0]
+        filtered_words = [w for w in words if w not in stop_words]
+
         # Parts of Speech tagging
-        tagged = nltk.pos_tag(words)
+        tagged = nltk.pos_tag(filtered_words)
+        # print(tagged)
 
         # Chunk adverbs, verbs and adjectives
-        grammer = r'''v: {<RB.?>+<IN|NN.?>?<VB.?>}
-                         {<VB.?>}
-                      a: {<RB.?>+<IN|NN.?>?<JJ.?>}
+        grammer = r'''Chunk: {<RB.?>+<VB.?>?<DT>?<JJ.?><IN>?<PRP.?>?<JJ.?>*<NN.?>}
                          {<JJ.?>}'''
         chunker = nltk.RegexpParser(grammer)
         chunked = chunker.parse(tagged)
-        words = [(' '.join(np.array(subtree)[:,0]), subtree.label()) for subtree in chunked.subtrees() if subtree.label() in ['v', 'a']]
+        [print(np.array(subtree)) for subtree in chunked.subtrees() if subtree.label() in ['v', 'a']]
+        words = [(' '.join(np.array(subtree)[:,0]), 'a') for subtree in chunked.subtrees() if subtree.label() == 'Chunk']
 
         # Convert to base words
         lemmatizer = WordNetLemmatizer()
         lemmas = [lemmatizer.lemmatize(*w) if w[1] else w for w in words]
-        
-        # Remove stop words
-        stop_words = stopwords.words("english")
-        filtered_words = [w for w in lemmas if w not in stop_words]
 
         # Replace "n't" with 'not'
         result = [x.replace("n't", 'not') if "n't" in x else x for x in lemmas]
@@ -125,20 +130,18 @@ class Sentiment:
         # print(self.predict(self.get_positive_data()))
         # print(self.predict(self.get_negative_data()))
 
-        pos = self.__pos[6]
-        neg = self.__neg[6]
-        print('\nPositive Review:\n', pos)
-        print('Filtered Words:\n', self.bag_of_words(pos))
-        print('\nNegative Review:\n', neg)
-        print('Filtered Words:\n', self.bag_of_words(neg))
-        print('\nPrediction: ', self.predict([pos, neg]))
+        # pos = self.__pos[7]
+        # print('Filtered Words:\n', self.bag_of_words(pos))
+        # print('\nPositive Review:\n', pos)
+        # neg = self.__neg[9]
+        # print('Filtered Words:\n', self.bag_of_words(neg))
+        # print('\nNegative Review:\n', neg)
+        # print('\nPrediction: ', self.predict([pos, neg]))
 
-        # for i in range(100):
-        #     print(i)
-        #     self.bag_of_words(self.__pos[i])
-        # for i in range(100):
-        #     print(i)
-        #     self.bag_of_words(self.__neg[i])
+        for i in range(10,20):
+            print(i, self.bag_of_words(self.__pos[i]))
+        for i in range(10,20):
+            print(i, self.bag_of_words(self.__neg[i]))
             
         # print(self.bag_of_words('not that bad'))
         # print(self.bag_of_words('very bad'))
