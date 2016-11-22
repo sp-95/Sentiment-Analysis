@@ -41,22 +41,14 @@ class Sentiment:
         words = [re.sub('^[\W_]+|[\W_]+$', '', i) for i in words]
         words = list(filter(None, words))
 
-        # Remove stop words
-        tagged = nltk.pos_tag(stopwords.words("english"))
-        grammer = r'''Chink: {<.*>}
-                             }<RB.?|VB.?|DT|JJ.?|IN|PRP.?>{'''
-        chunker = nltk.RegexpParser(grammer)
-        chunked = chunker.parse(tagged)
-        stop_words = np.array([np.array(subtree)[:,0] for subtree in chunked.subtrees() if subtree.label() == 'Chink'])[:,0]
-        filtered_words = [w for w in words if w not in stop_words]
-
         # Parts of Speech tagging
-        tagged = nltk.pos_tag(filtered_words)
-        # print(tagged)
+        tagged = nltk.pos_tag(words)
+        print(tagged)
 
-        # Chunk adverbs, verbs and adjectives
+        # Chunk required group of words
         grammer = r'''Chunk: {<RB.?>+<VB.?>?<DT>?<JJ.?><IN>?<PRP.?>?<JJ.?>*<NN.?>}
-                         {<JJ.?>}'''
+                             {<JJ.?><IN>?<PRP.?>?<JJ.?>*<NN.?>}
+                             {<JJ.?>}'''
         chunker = nltk.RegexpParser(grammer)
         chunked = chunker.parse(tagged)
         [print(np.array(subtree)) for subtree in chunked.subtrees() if subtree.label() in ['v', 'a']]
@@ -66,10 +58,15 @@ class Sentiment:
         lemmatizer = WordNetLemmatizer()
         lemmas = [lemmatizer.lemmatize(*w) if w[1] else w for w in words]
 
-        # Replace "n't" with 'not'
-        result = [x.replace("n't", 'not') if "n't" in x else x for x in lemmas]
+        # Handle some anomalies
+        words = [re.sub('^s | s$', '', x) for x in lemmas]
+        words = [x.replace("n't", 'not').replace(' s ', "'s ") for x in words]
 
-        return result
+        # Remove stop words
+        stop_words = stopwords.words("english")
+        result = [w for w in words if w not in stop_words]
+
+        return list(set(result))
 
     def __make_feature(self, word_list):
         return dict([(word, True) for word in word_list])
@@ -138,14 +135,14 @@ class Sentiment:
         # print('\nNegative Review:\n', neg)
         # print('\nPrediction: ', self.predict([pos, neg]))
 
-        for i in range(10,20):
-            print(i, self.bag_of_words(self.__pos[i]))
-        for i in range(10,20):
-            print(i, self.bag_of_words(self.__neg[i]))
+        # for i in range(10,20):
+        #     print(i, self.bag_of_words(self.__pos[i]))
+        # for i in range(10,20):
+        #     print(i, self.bag_of_words(self.__neg[i]))
             
-        # print(self.bag_of_words('not that bad'))
-        # print(self.bag_of_words('very bad'))
-        # print(self.bag_of_words('not very bad'))
+        print(self.bag_of_words('not that bad'))
+        print(self.bag_of_words('very bad'))
+        print(self.bag_of_words('not very bad'))
 
 if __name__ == '__main__':
     myObj = Sentiment()
