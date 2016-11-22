@@ -48,7 +48,7 @@ class Sentiment:
         # Chunk required group of words
         grammer = r'''Chunk: {<RB.?>+<VB.?>?<DT>?<JJ.?><IN>?<PRP.?>?<JJ.?>*<NN.?>}
                              {<JJ.?><IN>?<PRP.?>?<JJ.?>*<NN.?>}
-                             {<JJ.?>}'''
+                             {<RB.?>*<JJ.?>}'''
         chunker = nltk.RegexpParser(grammer)
         chunked = chunker.parse(tagged)
         [print(np.array(subtree)) for subtree in chunked.subtrees() if subtree.label() in ['v', 'a']]
@@ -135,14 +135,14 @@ class Sentiment:
         # print('\nNegative Review:\n', neg)
         # print('\nPrediction: ', self.predict([pos, neg]))
 
-        # for i in range(10,20):
-        #     print(i, self.bag_of_words(self.__pos[i]))
-        # for i in range(10,20):
-        #     print(i, self.bag_of_words(self.__neg[i]))
+        for i in range(10,20):
+            print(i, self.bag_of_words(self.__pos[i]))
+        for i in range(10,20):
+            print(i, self.bag_of_words(self.__neg[i]))
             
-        print(self.bag_of_words('not that bad'))
-        print(self.bag_of_words('very bad'))
-        print(self.bag_of_words('not very bad'))
+        # print(self.bag_of_words('not that bad'))
+        # print(self.bag_of_words('very bad'))
+        # print(self.bag_of_words('not very bad'))
 
 if __name__ == '__main__':
     myObj = Sentiment()
