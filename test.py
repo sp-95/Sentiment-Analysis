@@ -13,6 +13,6 @@ myObj = Sentiment()
 
 # print('\nPrediction: ', myObj.predict([pos, neg]))
 
-test = ['This is very good', 'This is bad', 'This is awesome', 'This is not so good']
+test = ['This is very good', 'This is bad', 'This is awesome', 'It is the worst', "It's boring"]
 for i in test:
     print('{}: {}'.format(i, myObj.predict(i)))
