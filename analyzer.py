@@ -33,12 +33,40 @@ class Sentiment:
             with open('classifier.pickle', 'wb') as f:
                 pickle.dump(self.__classifier, f)
 
-    def __preprocessing(self, sentence):
+    def __get_tag(self, tag):
+        if tag.startswith('R'):
+            return 'r'
+        elif tag.startswith('V'):
+            return 'v'
+        elif tag.startswith('A'):
+            return 'a'
+        else:
+            return 'n'
+
+    def __process_chunks(self, chunk):
+        tagged = nltk.pos_tag(chunk)
+        chunks = [(w[0], self.__get_tag(w[1])) for w in tagged]
+
+        # Convert to base words
+        lemmatizer = WordNetLemmatizer()
+        lemmas = [lemmatizer.lemmatize(*w) for w in chunks]
+
+        # Remove stop words
+        stop_words = stopwords.words("english")
+        tagged = nltk.pos_tag(stop_words)
+        stop_words = stop_words[:30] + [x[0] for x in tagged[30:130] if not re.match('[JIR]', x[1])] + stop_words[130:] + ['s']
+        words = [w for w in lemmas if w not in stop_words]
+
+        # Replace "n't" with 'not'
+        result = [w.replace("n't", 'not') for w in words]
+        return ' '.join(result)
+
+    def __preprocess(self, sentence):
         # Tokenize into words
         words = nltk.word_tokenize(sentence)
 
         # Remove non-alphnumeric characters
-        words = [re.sub('^[\W_]+|[\W_]+$', '', i) for i in words]
+        words = [re.sub("^(?!')[\W_]+|(?!')[\W_]+$", '', i) for i in words]
         words = list(filter(None, words))
 
         # Empty sentence
@@ -47,6 +75,7 @@ class Sentiment:
 
         # Parts of Speech tagging
         tagged = nltk.pos_tag(words)
+        # print(tagged)
 
         # Chunk required group of words
         grammer = r'''Chunk: {<RB.?>+<VB.?>?(<DT>?<JJ.?>)+(<IN><PRP.?>?|<IN>?)(<DT>?<JJ.?>)*<NN.?>}
@@ -57,25 +86,14 @@ class Sentiment:
                              {<JJ.?>}'''
         chunker = nltk.RegexpParser(grammer)
         chunked = chunker.parse(tagged)
-        # [print(np.array(subtree)) for subtree in chunked.subtrees() if subtree.label() == 'Chunk']
-        chunks = [(' '.join(np.array(subtree)[:,0]), 'a') for subtree in chunked.subtrees() if subtree.label() == 'Chunk']
+        chunks = [np.array(subtree)[:,0] for subtree in chunked.subtrees() if subtree.label() == 'Chunk']
 
-        # Convert to base words
-        lemmatizer = WordNetLemmatizer()
-        lemmas = [lemmatizer.lemmatize(*w) if w[1] else w for w in chunks]
-
-        # Handle some anomalies
-        words = [re.sub('^s | s$', '', x) for x in lemmas]
-        words = [x.replace("n't", 'not').replace(' s ', "'s ") for x in words]
-
-        # Remove stop words
-        stop_words = stopwords.words("english")
-        return [w for w in words if w not in stop_words]
+        return list(set([self.__process_chunks(chunk) for chunk in chunks]))
 
     def bag_of_words(self, review):
         # Tokenize into sentences
         sentences = nltk.sent_tokenize(review)
-        return [x for sentence in sentences for x in self.__preprocessing(sentence)]
+        return [x for sentence in sentences for x in self.__preprocess(sentence)]
 
     def __make_feature(self, word_list):
         return dict([(word, True) for word in word_list])
@@ -144,9 +162,9 @@ class Sentiment:
         # print('\nNegative Review:\n', neg)
         # print('\nPrediction: ', self.predict([pos, neg]))
 
-        for i in range(30,40):
+        for i in range(40,50):
             print(i, self.bag_of_words(self.__pos[i]))
-        for i in range(30,40):
+        for i in range(40,50):
             print(i, self.bag_of_words(self.__neg[i]))
             
         # print(self.bag_of_words('not that bad'))
