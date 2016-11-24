@@ -1,8 +1,8 @@
 import nltk
-from nltk.corpus import stopwords, wordnet
+from nltk.corpus import stopwords, wordnet, movie_reviews
 from nltk.stem import WordNetLemmatizer
 
-from glob import glob
+# from glob import glob
 import os.path
 import pickle
 import random
@@ -13,11 +13,13 @@ import re
 class Sentiment:
     def __init__(self, pos=None, neg=None):
         if not pos:
-            self.__pos = [open(f).read() for f in glob('review_polarity/txt_sentoken/pos/*.txt')]
+            # self.__pos = [open(f).read() for f in glob('review_polarity/txt_sentoken/pos/*.txt')]
+            self.__pos = [movie_reviews.raw(file) for file in movie_reviews.fileids('pos')]
         else:
             self.__pos = pos
         if not neg:
-            self.__neg = [open(f).read() for f in glob('review_polarity/txt_sentoken/neg/*.txt')]
+            # self.__neg = [open(f).read() for f in glob('review_polarity/txt_sentoken/neg/*.txt')]
+            self.__neg = [movie_reviews.raw(file) for file in movie_reviews.fileids('neg')]
         else:
             self.__neg = neg
 
@@ -153,18 +155,20 @@ class Sentiment:
         # print(self.predict(self.get_positive_data()))
         # print(self.predict(self.get_negative_data()))
 
-        pos = self.__pos[7]
-        print('Filtered Words:\n', self.bag_of_words(pos))
-        print('\nPositive Review:\n', pos)
-        neg = self.__neg[39]
-        print('Filtered Words:\n', self.bag_of_words(neg))
-        print('\nNegative Review:\n', neg)
-        print('\nPrediction: ', self.predict([pos, neg]))
+        # pos = self.__pos[7]
+        # print('Filtered Words:\n', self.bag_of_words(pos))
+        # print('\nPositive Review:\n', pos)
+        # neg = self.__neg[39]
+        # print('Filtered Words:\n', self.bag_of_words(neg))
+        # print('\nNegative Review:\n', neg)
+        # print('\nPrediction: ', self.predict([pos, neg]))
 
-        # for i in range(40,50):
-        #     print(i, self.bag_of_words(self.__pos[i]))
-        # for i in range(40,50):
-        #     print(i, self.bag_of_words(self.__neg[i]))
+        # print(self.predict(self.__pos[:5] + self.__neg[:5]))
+
+        for i in range(900,910):
+            print(i, self.bag_of_words(self.__pos[i]))
+        for i in range(900,910):
+            print(i, self.bag_of_words(self.__neg[i]))
             
         # print(self.bag_of_words('not that bad'))
         # print(self.bag_of_words('very bad'))
