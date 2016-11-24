@@ -164,10 +164,10 @@ class Sentiment:
 
         # print(self.predict(self.__pos[:5] + self.__neg[:5]))
 
-        for i in range(10, 20):
+        for i in range(1):
             print(i, self.bag_of_words(self.__pos[i]))
-        for i in range(10,20):
-            print(i, self.bag_of_words(self.__neg[i]))
+        # for i in range(10, 20):
+        #     print(i, self.bag_of_words(self.__neg[i]))
             
         # print(self.bag_of_words('not that bad'))
         # print(self.bag_of_words('very bad'))
