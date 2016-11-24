@@ -8,6 +8,7 @@ import pickle
 import random
 import numpy as np
 import re
+import itertools
 
 
 class Sentiment:
@@ -40,18 +41,33 @@ class Sentiment:
             return 'r'
         elif tag.startswith('V'):
             return 'v'
-        elif tag.startswith('A'):
+        elif tag.startswith('J'):
             return 'a'
-        else:
-            return 'n'
+        return 'n'
 
     def __process_chunk(self, chunk):
-        tagged = nltk.pos_tag(chunk)
-        chunks = [(w[0], self.__get_tag(w[1])) for w in tagged]
+        subtree = [(w[0], self.__get_tag(w[1])) for w in chunk]
+
+        # Add synonyms
+        words = []
+        for w,c in zip(subtree, chunk):
+            synonyms = []
+            if w[1][0] in 'rva':
+                synonyms = list(set([l.name().replace('_', ' ') for syn in wordnet.synsets(*w) for l in syn.lemmas()]))
+                tagged = nltk.pos_tag(synonyms)
+                synonyms = [t[0] for t in tagged if t[1] == c[1]]
+            if not synonyms:
+                synonyms.append(w[0])
+            words.append(synonyms)
+        # print([' '.join(x) for x in itertools.product(*words)])
+        synonym_result = [[(c, s[1]) for c,s in zip(chunks, subtree)] for chunks in itertools.product(*words)]
+        print(synonym_result)
+
+        chunk = [(w[0], self.__get_tag(w[1])) for w in chunk]
 
         # Convert to base words
         lemmatizer = WordNetLemmatizer()
-        lemmas = [lemmatizer.lemmatize(*w) for w in chunks]
+        lemmas = [lemmatizer.lemmatize(*w) for w in chunk]
 
         # Handle anomalies
         words = [w.replace("n't", 'not').replace("'", '') for w in lemmas]
@@ -61,6 +77,7 @@ class Sentiment:
         tagged = nltk.pos_tag(stop_words)
         stop_words = stop_words[:30] + [x[0] for x in tagged[30:130] if not re.match('[JIR]', x[1])] + stop_words[130:] + ['s']
         result = [w for w in words if w not in stop_words]
+
         return ' '.join(result)
 
     def __preprocess(self, sentence):
@@ -87,7 +104,7 @@ class Sentiment:
                              {<JJ.?>}'''
         chunker = nltk.RegexpParser(grammer)
         chunked = chunker.parse(tagged)
-        chunks = [np.array(subtree)[:,0] for subtree in chunked.subtrees() if subtree.label() == 'Chunk']
+        chunks = [np.array(subtree) for subtree in chunked.subtrees() if subtree.label() == 'Chunk']
 
         return list(set(filter(None, [self.__process_chunk(chunk) for chunk in chunks])))
 
@@ -165,10 +182,12 @@ class Sentiment:
 
         # print(self.predict(self.__pos[:5] + self.__neg[:5]))
 
-        for i in range(900,910):
-            print(i, self.bag_of_words(self.__pos[i]))
-        for i in range(900,910):
-            print(i, self.bag_of_words(self.__neg[i]))
+        for i in range(498,499):
+            print(i)
+            self.bag_of_words(self.__pos[i])
+        # for i in range(459):
+        #     print(i)
+        #     self.bag_of_words(self.__neg[i])
             
         # print(self.bag_of_words('not that bad'))
         # print(self.bag_of_words('very bad'))
