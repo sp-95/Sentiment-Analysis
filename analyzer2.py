@@ -8,6 +8,7 @@ import pickle
 import random
 import numpy as np
 import re
+import itertools
 
 
 class Sentiment:
@@ -47,8 +48,29 @@ class Sentiment:
     def __process_chunk(self, chunk):
         subtree = [(w[0], self.__get_tag(w[1])) for w in chunk]
 
+        # Add synonyms
+        words = []
+        for w,c in zip(subtree, chunk):
+            synonyms = []
+            if w[1][0] in 'rva':
+                synonyms = list(set([l.name().replace('_', ' ') for syn in wordnet.synsets(*w) for l in syn.lemmas()]))
+                tagged = nltk.pos_tag(synonyms)
+                synonyms = [t[0] for t in tagged if t[1] == c[1]]
+            if not synonyms:
+                synonyms.append(w[0])
+            words.append(synonyms)
+        # print([' '.join(x) for x in itertools.product(*words)])
+        synonyms = [[(c, s[1]) for c,s in zip(chunks, subtree)] for chunks in itertools.product(*words)]
+
         # Convert to base words
         lemmatizer = WordNetLemmatizer()
+        lemmas = [[lemmatizer.lemmatize(*w) for w in synonym] for synonym in synonyms]
+        words = [[w.replace("n't", 'not').replace("'", '') for w in lemma] for lemma in lemmas]
+        stop_words = stopwords.words("english")
+        tagged = nltk.pos_tag(stop_words)
+        stop_words = stop_words[:30] + [x[0] for x in tagged[30:130] if not re.match('[JIR]', x[1])] + stop_words[130:] + ['s']
+        result = [w for w in words if w not in stop_words]
+        print([' '.join(w) for w in result])
         lemmas = [lemmatizer.lemmatize(*w) for w in subtree]
 
         # Handle anomalies
@@ -164,10 +186,11 @@ class Sentiment:
 
         # print(self.predict(self.__pos[:5] + self.__neg[:5]))
 
-        for i in range(10, 20):
-            print(i, self.bag_of_words(self.__pos[i]))
-        for i in range(10,20):
-            print(i, self.bag_of_words(self.__neg[i]))
+        for i in range(1):
+            print(i)
+            self.bag_of_words(self.__pos[i])
+        # for i in range(10,20):
+        #     print(i, self.bag_of_words(self.__neg[i]))
             
         # print(self.bag_of_words('not that bad'))
         # print(self.bag_of_words('very bad'))
